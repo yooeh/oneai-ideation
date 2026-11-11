@@ -86,7 +86,7 @@ function resolve(src){ return encodeURI(src); }
 const tabs=document.querySelector('.tabs'), vp=document.getElementById('viewport');
 const frames=ITEMS.map(([name,src,eb,title,desc],i)=>{
   const sl=document.createElement('section'); sl.className='slide';
-  sl.innerHTML=`<div class="hd"><div class="eb"><b>아이데이션</b><i></i>${eb}</div><p>${desc}</p></div><div class="stage"><div class="frame"></div></div>`;
+  sl.innerHTML=`<div class="hd"><div class="eb"><b>${eb}</b></div><p>${desc}</p></div><div class="stage"><div class="frame"></div></div>`;
   const f=sl.querySelector('.frame');
   const url=resolve(src), isImg=/\.(png|jpe?g|webp|gif)(#|$)/i.test(src);
   f.innerHTML=isImg?`<img src="${url}" alt="${name}">`
