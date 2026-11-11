@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ONE AI Desktop 고도화 아이데이션</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<meta name="robots" content="noindex">
+<style>
+/* 상단 탭 + 영상만. 영상은 창 크기에 맞춰 비율 유지하며 자동 조절 */
+:root{
+  --bg:#1e1e1e; --tabbar:#141414; --line:#2a2a2a;
+  --tab:#8d8d8d; --tab-hover:#cfcfcf; --tab-on:#ffffff; --lav:#9d8cff; --num:#5f5f5f;
+  --seg:#1f1f21; --seg-line:#303033; --seg-hover:#28282b; --seg-on:#36363a; --seg-on-line:#46464b;
+  --tabs-h:52px; --pad:24px; --ratio:1.6;
+  color-scheme:dark;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);overflow:hidden}
+body{font-family:"Pretendard","Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;letter-spacing:-.02em;-webkit-font-smoothing:antialiased}
+
+/* 상단: 타이틀 + 박스 안에 담긴 탭(세그먼트) */
+.top{position:fixed;inset:0 0 auto 0;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 24px;padding:14px 24px;background:var(--tabbar);border-bottom:1px solid var(--line);z-index:10}
+.top h1{font-size:18px;font-weight:700;color:var(--tab-on);letter-spacing:-.03em;white-space:nowrap}
+.top h1 b{color:var(--lav);font-weight:700}
+.tabs{display:flex;gap:2px;padding:4px;background:var(--seg);border:1px solid var(--seg-line);border-radius:12px;overflow-x:auto;scrollbar-width:none;max-width:100%}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{flex:none;background:none;border:0;color:var(--tab);font:inherit;font-size:13.5px;font-weight:500;padding:8px 14px;border-radius:8px;cursor:pointer;white-space:nowrap;transition:background .15s,color .15s}
+.tabs button:hover{color:var(--tab-hover);background:var(--seg-hover)}
+.tabs button[aria-selected="true"]{color:var(--tab-on);font-weight:700;background:var(--seg-on);box-shadow:0 1px 2px rgba(0,0,0,.35),inset 0 0 0 1px var(--seg-on-line)}
+.tabs button:focus-visible{outline:2px solid var(--lav);outline-offset:-2px}
+.tabs .n{color:var(--num);margin-right:6px;font-weight:600}
+.tabs button[aria-selected="true"] .n{color:var(--lav)}
+@media (prefers-reduced-motion:reduce){.tabs button{transition:none}}
+
+.viewport{position:fixed;inset:var(--tabs-h) 0 0 0;display:grid;place-items:center;padding:var(--pad)}
+.frame{display:none;aspect-ratio:var(--ratio);
+  width:min(calc(100vw - var(--pad)*2), calc((100vh - var(--tabs-h) - var(--pad)*2) * var(--ratio)));
+  border-radius:12px;overflow:hidden;background:#000}
+.frame.on{display:block}
+.frame video,.frame img{width:100%;height:100%;object-fit:cover;display:block}
+</style>
+</head>
+<body>
+
+<header class="top" id="top">
+  <h1>ONE AI Desktop 고도화 <b>아이데이션</b></h1>
+  <nav class="tabs" role="tablist" aria-label="장 이동"></nav>
+</header>
+<main class="viewport" id="viewport"></main>
+
+<script>
+/* 장 순서대로 [탭 이름, 파일 경로] — 영상(.mov/.mp4) 또는 이미지(.png/.jpg) */
+const ITEMS = [
+  ['홈 · 브리핑/워크 스튜디오', 'media/home.mp4'],
+  ['에이전트 현황',            'media/agent-status.png'],
+  ['Case01 화상회의',          'media/meeting.mp4'],
+  ['Case02 경비청구',          'media/expense.mp4'],
+  ['Case03 휴가',              'media/vacation.mp4'],
+  ['Case04 퇴근',              'media/leave.mp4'],
+  ['Case05 나만의 에이전트',    'media/agent.mp4'],
+];
+function resolve(src){ return encodeURI(src); }
+
+const tabs=document.querySelector('.tabs'), vp=document.getElementById('viewport');
+const frames=ITEMS.map(([name,src],i)=>{
+  const f=document.createElement('div'); f.className='frame';
+  const url=resolve(src), isImg=/\.(png|jpe?g|webp|gif)(#|$)/i.test(src);
+  f.innerHTML=isImg?`<img src="${url}" alt="${name}">`
+    :`<video src="${url}" muted loop playsinline preload="auto" controls controlslist="nodownload noremoteplayback" disablepictureinpicture></video>`;
+  vp.appendChild(f);
+  const b=document.createElement('button'); b.role='tab';
+  b.innerHTML=`<span class="n">${String(i+1).padStart(2,'0')}</span>${name}`;
+  b.onclick=()=>go(i); tabs.appendChild(b);
+  return f;
+});
+const btns=[...tabs.children];
+let cur=0;
+function go(i){
+  i=Math.max(0,Math.min(frames.length-1,i));
+  frames.forEach((f,k)=>{
+    const on=k===i; f.classList.toggle('on',on); btns[k].setAttribute('aria-selected',on);
+    const v=f.querySelector('video');
+    if(v){ if(on){v.currentTime=0;v.play().catch(()=>{});} else v.pause(); }
+  });
+  btns[i].scrollIntoView({block:'nearest',inline:'nearest'});
+  try{history.replaceState(null,'','#'+(i+1));}catch(e){}
+  cur=i;
+}
+addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key==='PageDown') go(cur+1);
+  if(e.key==='ArrowLeft'||e.key==='PageUp') go(cur-1);
+  if(e.key===' '){ const v=frames[cur].querySelector('video'); if(v){e.preventDefault(); v.paused?v.play():v.pause();} }
+});
+/* 상단 높이(줄바꿈 포함)에 맞춰 영상 영역 조절 */
+const topBar=document.getElementById('top');
+const syncTop=()=>document.documentElement.style.setProperty('--tabs-h',topBar.offsetHeight+'px');
+new ResizeObserver(syncTop).observe(topBar); syncTop();
+go((parseInt(location.hash.slice(1))||1)-1);
+</script>
+</body>
+</html>
