@@ -3,16 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
 <title>ONE AI Desktop 고도화 아이데이션</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
-<meta name="robots" content="noindex">
 <style>
 /* 상단 탭 + 영상만. 영상은 창 크기에 맞춰 비율 유지하며 자동 조절 */
 :root{
   --bg:#1e1e1e; --tabbar:#141414; --line:#2a2a2a;
   --tab:#8d8d8d; --tab-hover:#cfcfcf; --tab-on:#ffffff; --lav:#9d8cff; --num:#5f5f5f;
   --seg:#1f1f21; --seg-line:#303033; --seg-hover:#28282b; --seg-on:#36363a; --seg-on-line:#46464b;
-  --tabs-h:52px; --pad:24px; --ratio:1.6;
+  --sub:#a3a3a3; --tabs-h:52px; --pad:24px; --ratio:1.6;
   color-scheme:dark;
 }
 *{box-sizing:border-box;margin:0;padding:0}
@@ -33,11 +33,19 @@ body{font-family:"Pretendard","Noto Sans KR","Apple SD Gothic Neo","Malgun Gothi
 .tabs button[aria-selected="true"] .n{color:var(--lav)}
 @media (prefers-reduced-motion:reduce){.tabs button{transition:none}}
 
-.viewport{position:fixed;inset:var(--tabs-h) 0 0 0;display:grid;place-items:center;padding:var(--pad)}
-.frame{display:none;aspect-ratio:var(--ratio);
-  width:min(calc(100vw - var(--pad)*2), calc((100vh - var(--tabs-h) - var(--pad)*2) * var(--ratio)));
+.viewport{position:fixed;inset:var(--tabs-h) 0 0 0;padding:20px var(--pad) var(--pad)}
+/* 장: 위에 타이틀·설명, 아래 영상(남은 공간에 비율 유지하며 맞춤) */
+.slide{display:none;height:100%;flex-direction:column;gap:16px}
+.slide.on{display:flex}
+.hd{flex:none;width:100%;max-width:max(var(--fw,100%),min(100%,560px));margin:0 auto}
+.eb{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:var(--sub)}
+.eb b{color:var(--lav);font-weight:700}
+.eb i{width:1px;height:11px;background:#666;display:block}
+.hd h2{font-size:clamp(17px,1.5vw,22px);font-weight:700;color:var(--tab-on);letter-spacing:-.03em;line-height:1.3;margin-top:8px;text-wrap:balance}
+.hd p{font-size:clamp(13px,1vw,14.5px);color:var(--sub);line-height:1.55;margin-top:6px;max-width:72ch}
+.stage{flex:1;min-height:0;container-type:size;display:grid;place-items:center}
+.frame{aspect-ratio:var(--ratio);width:min(100cqw, calc(100cqh * var(--ratio)));max-width:100%;
   border-radius:12px;overflow:hidden;background:#000}
-.frame.on{display:block}
 .frame video,.frame img{width:100%;height:100%;object-fit:cover;display:block}
 </style>
 </head>
@@ -50,29 +58,45 @@ body{font-family:"Pretendard","Noto Sans KR","Apple SD Gothic Neo","Malgun Gothi
 <main class="viewport" id="viewport"></main>
 
 <script>
-/* 장 순서대로 [탭 이름, 파일 경로] — 영상(.mov/.mp4) 또는 이미지(.png/.jpg) */
+/* 장 순서대로 [탭 이름, 파일 경로, 머리말, 타이틀, 설명] — 영상(.mov/.mp4) 또는 이미지(.png/.jpg) */
 const ITEMS = [
-  ['홈 · 브리핑/워크 스튜디오', 'media/home.mp4'],
-  ['에이전트 현황',            'media/agent-status.png'],
-  ['Case01 화상회의',          'media/meeting.mp4'],
-  ['Case02 경비청구',          'media/expense.mp4'],
-  ['Case03 휴가',              'media/vacation.mp4'],
-  ['Case04 퇴근',              'media/leave.mp4'],
-  ['Case05 나만의 에이전트',    'media/agent.mp4'],
+  ['홈 · 브리핑/워크 스튜디오', 'media/home.mp4',
+    '홈 - 브리핑/워크 스튜디오 모드', '같은 업무, 두 가지 시선으로 보는 홈',
+    '브리핑 모드는 내가 챙길 일을, 워크 스튜디오 모드는 AI 팀이 하고 있는 일을 보여줍니다. 내용은 같고 보여주는 방식만 다릅니다.'],
+  ['에이전트 현황', 'media/agent-status.png',
+    '에이전트 현황', '에이전트별 업무 진행 현황을 한곳에서 확인합니다',
+    '각 에이전트가 수행 중인 업무와 진행 상태를 현황판으로 보여주고, 작업 흐름과 확인이 필요한 사항을 쉽게 파악할 수 있도록 합니다.'],
+  ['Case01 화상회의', 'media/meeting.mp4',
+    '업무Case01. 화상회의', '회의가 끝나면, 홈에서 한 마디로 정리를 맡깁니다',
+    '연동된 화상회의가 끝난 뒤 홈 화면 채팅창에 “회의 정리해 줘”라고 요청하면, 업무비서가 회의록 작성부터 업무 배분, 참석자 공유 메일 초안까지 이어서 처리합니다.'],
+  ['Case02 경비청구', 'media/expense.mp4',
+    '업무Case02. 경비청구', '먼저 제안하고 끝까지 처리하는 경비청구',
+    '구매 에이전트가 출장 다녀온것을 먼저 알아채고, 경비 전표 작성부터 결재 상신까지 알아서 처리합니다.'],
+  ['Case03 휴가', 'media/vacation.mp4',
+    '업무Case03. 휴가', '휴가중 자리를 비워도 멈추지 않는 업무',
+    '연차가 승인되면 휴가 중 들어올 일을 미리 찾아 에이전트가 할 일, 팀원이 대신할 일, 내가 복귀 후 할 일로 나누고, 돌아오면 남겨 둔 결정만 하면 됩니다.'],
+  ['Case04 퇴근', 'media/leave.mp4',
+    '업무Case04. 퇴근', '내가 퇴근해도, 에이전트는 퇴근하지 않습니다',
+    '퇴근 후에도 에이전트가 남은 일을 이어서 처리하고, 출근하면 결과와 승인할 일만 아침 브리핑으로 받아봅니다.'],
+  ['Case05 나만의 에이전트', 'media/agent.mp4',
+    '업무Case05. 나만의 에이전트 만들기', '반복되는 업무는, 직접 만든 에이전트에게 맡깁니다',
+    '네이버웍스 AI 스튜디오가 ‘답하는’ 어시스턴트를 만든다면, ONE AI는 ERP와 결재까지 ‘실행하는’ 에이전트를 만듭니다.'],
 ];
 function resolve(src){ return encodeURI(src); }
 
 const tabs=document.querySelector('.tabs'), vp=document.getElementById('viewport');
-const frames=ITEMS.map(([name,src],i)=>{
-  const f=document.createElement('div'); f.className='frame';
+const frames=ITEMS.map(([name,src,eb,title,desc],i)=>{
+  const sl=document.createElement('section'); sl.className='slide';
+  sl.innerHTML=`<div class="hd"><div class="eb"><b>아이데이션</b><i></i>${eb}</div><h2>${title}</h2><p>${desc}</p></div><div class="stage"><div class="frame"></div></div>`;
+  const f=sl.querySelector('.frame');
   const url=resolve(src), isImg=/\.(png|jpe?g|webp|gif)(#|$)/i.test(src);
   f.innerHTML=isImg?`<img src="${url}" alt="${name}">`
     :`<video src="${url}" muted loop playsinline preload="auto" controls controlslist="nodownload noremoteplayback" disablepictureinpicture></video>`;
-  vp.appendChild(f);
+  vp.appendChild(sl);
   const b=document.createElement('button'); b.role='tab';
   b.innerHTML=`<span class="n">${String(i+1).padStart(2,'0')}</span>${name}`;
   b.onclick=()=>go(i); tabs.appendChild(b);
-  return f;
+  return sl;
 });
 const btns=[...tabs.children];
 let cur=0;
@@ -86,6 +110,7 @@ function go(i){
   btns[i].scrollIntoView({block:'nearest',inline:'nearest'});
   try{history.replaceState(null,'','#'+(i+1));}catch(e){}
   cur=i;
+  if(typeof syncFw==='function') syncFw();
 }
 addEventListener('keydown',e=>{
   if(e.key==='ArrowRight'||e.key==='PageDown') go(cur+1);
@@ -96,6 +121,10 @@ addEventListener('keydown',e=>{
 const topBar=document.getElementById('top');
 const syncTop=()=>document.documentElement.style.setProperty('--tabs-h',topBar.offsetHeight+'px');
 new ResizeObserver(syncTop).observe(topBar); syncTop();
+/* 타이틀 폭을 영상 폭에 맞춰 왼쪽 끝 정렬 */
+function syncFw(){ const sl=frames[cur], w=sl.querySelector('.frame').offsetWidth; if(w>0) sl.style.setProperty('--fw',w+'px'); }
+const ro=new ResizeObserver(syncFw); frames.forEach(sl=>ro.observe(sl.querySelector('.frame')));
+addEventListener('resize',syncFw);
 go((parseInt(location.hash.slice(1))||1)-1);
 </script>
 </body>
